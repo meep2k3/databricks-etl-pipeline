@@ -1,75 +1,125 @@
-# Databricks ETL Pipeline
+# Databricks ETL Pipeline Project
 
 ## Giới thiệu
-Dự án này được thực hiện với mục tiêu chính là **học và thực hành các khái niệm Cloud Data Engineering** trên môi trường **Databricks**.  
-Project mô phỏng một hệ thống ETL Pipeline end-to-end cho dữ liệu **hàng không – đặt vé máy bay**, bao gồm các bước xử lý dữ liệu theo kiến trúc **Medallion (Bronze – Silver – Gold)**.  
 
-Các điểm nổi bật:
-- Làm việc với **dữ liệu thô ở định dạng CSV**.
-- Xây dựng **pipeline xử lý dữ liệu tự động** bằng **Delta Live Tables (DLT)**.
-- Thiết kế mô hình dữ liệu theo **Star Schema** (Fact & Dimension tables).
-- Thực hiện phân tích dữ liệu bằng SQL trong lớp Gold.
-- Thực hành các khái niệm **incremental load, slowly changing dimension, surrogate key**.
+Dự án này được xây dựng với mục tiêu **học tập và thực hành Cloud Data
+Engineering trên Databricks**.\
+Pipeline được thiết kế theo mô hình **Medallion Architecture (Bronze →
+Silver → Gold)** để xử lý dữ liệu từ thô đến báo cáo cuối cùng.
 
----
+Các bước chính trong pipeline:
 
-## Kiến trúc tổng thể
-Dữ liệu được chia thành 3 lớp theo Medallion Architecture:
+-   **Bronze**: ingestion dữ liệu thô (CSV) vào Delta Lake.\
+-   **Silver**: làm sạch, chuẩn hóa, và áp dụng Slowly Changing
+    Dimension (SCD).\
+-   **Gold**: tạo các bảng phân tích (fact + dimension) và chạy các truy
+    vấn BI.
 
-- **Bronze**: Lưu trữ dữ liệu thô, giữ nguyên trạng từ nguồn.
-- **Silver**: Làm sạch, chuẩn hoá, xử lý quan hệ giữa các bảng.
-- **Gold**: Phục vụ phân tích nghiệp vụ, báo cáo.
+------------------------------------------------------------------------
 
-Sơ đồ tổng quan pipeline:
+## Cấu trúc dữ liệu đầu vào (Bronze)
 
+Dữ liệu được nạp từ các file CSV ban đầu (raw zone):
 
----
+    dim_airports.csv
+    dim_airports_increment.csv
+    dim_flights.csv
+    dim_flights_increment.csv
+    dim_passengers.csv
+    dim_passengers_increment.csv
+    fact_bookings.csv
+    fact_bookings_increment.csv
 
-## Bronze Layer
+Ảnh minh họa dữ liệu đầu vào:
 
-### Input data
-Dữ liệu đầu vào gồm các bảng Fact và Dimension ở cả dạng full load và incremental load (xem hình dưới):
+![raw-data](./images/raw-data.png)
 
-- `dim_airports.csv`, `dim_airports_increment.csv`
-- `dim_flights.csv`, `dim_flights_increment.csv`
-- `dim_passengers.csv`, `dim_passengers_increment.csv`
-- `fact_bookings.csv`, `fact_bookings_increment.csv`
+------------------------------------------------------------------------
 
-![Input Data](./images/input_data.png)
+## Bronze Layer -- Ingestion
 
-### Xử lý
-- Tất cả các file CSV được load trực tiếp vào Databricks bằng **Delta Live Tables**.
-- Lớp Bronze giữ nguyên dữ liệu (raw) để đảm bảo khả năng kiểm tra khi có lỗi xảy ra.
+-   Ingestion dữ liệu từ CSV vào **Delta Lake (Bronze tables)**.\
+-   Giữ nguyên format, không làm sạch dữ liệu, để đảm bảo có bản gốc
+    phục vụ auditing.
 
----
+Code mẫu (PySpark on Databricks):
 
-## Gold Layer
+``` python
+df = spark.read.format("csv")     .option("header", True)     .load("/Volumes/workspace/raw/dim_airports.csv")
 
-### Mục tiêu
-- Thiết kế **Star Schema** từ dữ liệu đã được làm sạch (ở lớp Silver).
-- Tạo các bảng **Fact và Dimension** phục vụ phân tích.
+df.write.format("delta").mode("overwrite").save("/Volumes/workspace/bronze/dim_airports")
+```
 
-### ERD (Entity Relationship Diagram)
-Dưới đây là ERD mô tả quan hệ giữa các bảng Fact & Dimension trong hệ thống:
+Kết quả: các bảng Delta ở **Bronze Layer**.
 
-![ERD](./images/bff16ddd-2328-4516-a82a-86b16c64254c.png)
+------------------------------------------------------------------------
 
-### Ví dụ Query phân tích
-Một số câu SQL được thực thi trên lớp Gold để phân tích dữ liệu:
+## Silver Layer -- Transformation (Sẽ cập nhật sau)
 
-```sql
--- Top 10 sân bay có số lượng chuyến bay nhiều nhất
+-   Làm sạch dữ liệu.\
+-   Chuẩn hóa schema.\
+-   Áp dụng **Slowly Changing Dimension (SCD Type 2)** để quản lý dữ
+    liệu thay đổi theo thời gian.\
+-   Tích hợp pipeline với **Databricks DLT (Delta Live Tables)** để tự
+    động hóa.
+
+👉 Phần này sẽ được bổ sung khi hoàn tất code & pipeline Silver.
+
+------------------------------------------------------------------------
+
+## Gold Layer -- Data Mart
+
+-   Tạo **fact & dimension tables** đã chuẩn hóa.\
+-   Dùng SQL để viết các truy vấn phục vụ phân tích.
+
+Ảnh minh họa ERD kết quả:
+
+![erd](./images/erd.png)
+
+Ví dụ truy vấn:
+
+``` sql
+-- Top 10 sân bay có nhiều chuyến bay nhất
 SELECT a.airport_name, COUNT(f.flight_id) AS total_flights
-FROM fact_bookings b
-JOIN dim_flights f ON b.flight_id = f.flight_id
-JOIN dim_airports a ON f.departure_airport_id = a.airport_id
+FROM fact_bookings f
+JOIN dim_airports a ON f.airport_id = a.airport_id
 GROUP BY a.airport_name
 ORDER BY total_flights DESC
 LIMIT 10;
+```
 
--- Doanh thu theo từng hãng hàng không
-SELECT f.airline, SUM(b.price) AS total_revenue
-FROM fact_bookings b
-JOIN dim_flights f ON b.flight_id = f.flight_id
-GROUP BY f.airline
-ORDER BY total_revenue DESC;
+------------------------------------------------------------------------
+
+## Kết quả đạt được
+
+-   Hiểu và áp dụng thành công kiến trúc **Medallion Architecture** trên
+    Databricks.\
+-   Xây dựng pipeline ingestion (Bronze) và analytic queries (Gold).\
+-   Chuẩn bị sẵn dữ liệu để mở rộng cho **Silver Layer với SCD & DLT**.
+
+------------------------------------------------------------------------
+
+## How to Run
+
+1.  **Clone repo** về máy hoặc Databricks Repo:
+
+    ``` bash
+    git clone <repo-url>
+    ```
+
+2.  **Import Job JSON** vào Databricks (trong UI → Workflows → Import).
+
+3.  **Chạy Bronze ingestion job** để nạp dữ liệu thô vào Delta Lake.
+
+4.  **Chạy Silver DLT pipeline** (sẽ bổ sung sau).
+
+5.  **Kiểm tra Gold Layer** bằng cách mở notebook SQL và chạy các truy
+    vấn.
+
+------------------------------------------------------------------------
+
+## Ghi chú
+
+-   Toàn bộ dự án được xây dựng để **luyện tập kỹ năng Cloud Data
+    Engineering trên Databricks**.\
+-   Có thể mở rộng để tích hợp với Airflow, Power BI hoặc Superset.
