@@ -1,0 +1,25 @@
+{
+  "id": "9d2764d8-50f1-4720-8212-696ba3879e61",
+  "pipeline_type": "WORKSPACE",
+  "name": "SILVER_DLT_PIPELINE",
+  "libraries": [
+    {
+      "glob": {
+        "include": "/Repos/vinhquyen0401@gmail.com/databricks-etl-pipeline/dltPipeline.py"
+      }
+    },
+    {
+      "glob": {
+        "include": "/Repos/vinhquyen0401@gmail.com/databricks-etl-pipeline/dltPipeline.py"
+      }
+    }
+  ],
+  "schema": "silver",
+  "continuous": false,
+  "development": false,
+  "photon": true,
+  "channel": "CURRENT",
+  "catalog": "workspace",
+  "serverless": true,
+  "root_path": "/Repos/vinhquyen0401@gmail.com/databricks-etl-pipeline"
+}

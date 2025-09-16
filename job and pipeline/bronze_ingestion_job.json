@@ -1,0 +1,57 @@
+{
+  "name": "Bronze_Ingestion",
+  "email_notifications": {
+    "no_alert_for_skipped_runs": false
+  },
+  "webhook_notifications": {},
+  "timeout_seconds": 0,
+  "max_concurrent_runs": 1,
+  "tasks": [
+    {
+      "task_key": "Parameter",
+      "run_if": "ALL_SUCCESS",
+      "notebook_task": {
+        "notebook_path": "/Workspace/Databricks End to End Flights Project/SrcParameters",
+        "source": "WORKSPACE"
+      },
+      "timeout_seconds": 0,
+      "email_notifications": {},
+      "webhook_notifications": {}
+    },
+    {
+      "task_key": "Incremental_Ingestion",
+      "depends_on": [
+        {
+          "task_key": "Parameter"
+        }
+      ],
+      "run_if": "ALL_SUCCESS",
+      "for_each_task": {
+        "inputs": "{{tasks.Parameter.values.output_key}}",
+        "task": {
+          "task_key": "Incremental_Ingestion_iteration",
+          "run_if": "ALL_SUCCESS",
+          "notebook_task": {
+            "notebook_path": "/Workspace/Databricks End to End Flights Project/BronzeLayer",
+            "base_parameters": {
+              "src": "{{input.src}}"
+            },
+            "source": "WORKSPACE"
+          },
+          "timeout_seconds": 0,
+          "email_notifications": {},
+          "webhook_notifications": {}
+        }
+      },
+      "timeout_seconds": 0,
+      "email_notifications": {}
+    }
+  ],
+  "queue": {
+    "enabled": true
+  },
+  "performance_target": "STANDARD",
+  "run_as": {
+    "user_name": "vinhquyen0401@gmail.com"
+  }
+}
