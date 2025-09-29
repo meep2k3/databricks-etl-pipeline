@@ -79,7 +79,7 @@ The repository contains the small sample inputs used during development (place s
 
 ---
 
-## Silver Layer (detailed — updated with code)
+## Silver Layer 
 
 ### Goals
 - Clean & coerce types, add `modifiedDate` column for CDC sequencing.  
