@@ -45,7 +45,11 @@ databricks-etl-pipeline/
 │   └── passenger_demographics.sql
 ├── images/
 │   ├── input_data.png
-│   └── erd.png
+│   ├── erd.png
+│   ├── monthly_bookings_trend.png
+│   ├── passenger_demographics.png
+│   ├── top_airports_bookings.png
+│   └── revenue_by_airline.png
 ├── models/
 │   └── star_schema.dbml
 ├── README.md
@@ -54,17 +58,74 @@ databricks-etl-pipeline/
 
 ---
 
+## Input Data Overview
+
+This project uses **mock flight booking data** to simulate a realistic airline reservation system. The dataset consists of dimension tables and a fact table, designed to demonstrate incremental data ingestion and SCD handling.
+
+### Data Files Structure
+
+| File Name | Records | Description | Key Columns |
+|-----------|---------|-------------|-------------|
+| `dim_airports.csv` | 50 | Base airport dimension | `airport_id`, `airport_name`, `city`, `country` |
+| `dim_airports_increment.csv` | 5 | Incremental airport updates | Same schema as base |
+| `dim_flights.csv` | 100 | Base flight dimension | `flight_id`, `airline`, `origin`, `destination`, `flight_date` |
+| `dim_flights_increment.csv` | 10 | Incremental flight updates | Same schema as base |
+| `dim_passengers.csv` | 200 | Base passenger dimension | `passenger_id`, `name`, `gender`, `nationality` |
+| `dim_passengers_increment.csv` | 20 | Incremental passenger updates | Same schema as base |
+| `fact_bookings.csv` | 1,000 | Base booking fact table | `booking_id`, `passenger_id`, `flight_id`, `airport_id`, `amount`, `booking_date` |
+| `fact_bookings_increment.csv` | 300 | Incremental booking records | Same schema as base |
+
+### Sample Data Preview
+
+**dim_airports.csv** (first 5 rows):
+```csv
+airport_id,airport_name,city,country
+A001,Gregoryland International Airport,Kristenmouth,South Georgia and the South Sandwich Islands
+A002,East Kristin International Airport,North Michaelview,Bosnia and Herzegovina
+A003,Brownland International Airport,Samuelville,Costa Rica
+A004,Meghanton International Airport,Andrewsmouth,Macedonia
+A005,East Aaron International Airport,Davishaven,Monaco
+```
+
+**dim_flights.csv** (first 5 rows):
+```csv
+flight_id,airline,origin,destination,flight_date
+F0001,Delta,Kellyfort,South Kathleen,2025-05-04
+F0002,Qatar Airways,Lake Stephen,New Vincent,2025-04-29
+F0003,Lufthansa,East Patrickborough,North Mary,2025-05-11
+F0004,Delta,Maddenshire,Johnchester,2025-05-16
+F0005,Qatar Airways,Bennettside,New Mistyhaven,2025-06-13
+```
+
+**dim_passengers.csv** (first 5 rows):
+```csv
+passenger_id,name,gender,nationality
+P0001,Kevin Ferguson,Male,Reunion
+P0002,Kathleen Martinez DVM,Female,Burkina Faso
+P0003,Cynthia Frazier,Male,Marshall Islands
+P0004,Ryan Ramsey,Male,Niger
+P0005,Mike Kim,Male,Taiwan
+```
+
+**fact_bookings.csv** (first 4 rows):
+```csv
+booking_id,passenger_id,flight_id,airport_id,amount,booking_date
+B00001,P0048,F0014,A048,850.72,2025-05-29
+B00002,P0011,F0052,A003,376.63,2025-06-09
+B00003,P0079,F0023,A012,534.02,2025-06-03
+B00004,P0068,F0001,A039,1333.7,2025-06-16
+```
+
+### Data Characteristics
+- **Time Range**: Bookings span from March 2025 to July 2025
+- **Airlines**: Delta, Qatar Airways, Lufthansa, Emirates, Air Canada
+- **Booking Amounts**: Range from ~$300 to ~$1,500 per booking
+- **Data Type**: Synthetic/mock data generated for learning purposes
+- **Incremental Updates**: Simulate new bookings and dimension changes arriving in batches
+
+---
+
 ## Bronze Layer
-
-### Input data
-The repository contains the small sample inputs used during development (place small sample CSVs only; do NOT push large/full production data into the repo):
-
-- `dim_airports.csv`, `dim_airports_increment.csv`  
-- `dim_flights.csv`, `dim_flights_increment.csv`  
-- `dim_passengers.csv`, `dim_passengers_increment.csv`  
-- `fact_bookings.csv`, `fact_bookings_increment.csv`
-
-(Images showing input files are in `images/input_data.png`.)
 
 ### Implementation summary
 - Ingest method: **Auto Loader / cloudFiles** (Auto Loader — dịch vụ đọc incremental file mới).  
@@ -236,9 +297,60 @@ ORDER BY month;
 
 ---
 
+## Dashboard & Analytics Results
+
+After completing the ETL pipeline and building the Gold layer, we created analytical dashboards using Databricks SQL to visualize key business metrics from the star schema.
+
+### Key Visualizations
+
+#### 1. Monthly Bookings Trend
+![Monthly Bookings Trend](dashboards/monthly_bookings_trend.png)
+
+Shows the distribution of total bookings across months (March - July 2025). Peak booking periods were in April and May with over 330 bookings each, while March and July showed lower activity.
+
+#### 2. Passenger Demographics by Gender
+![Passenger Demographics](dashboards/passenger_demographics.png)
+
+Gender distribution of passengers:
+- **Female**: 53.23%
+- **Male**: 46.77%
+
+The passenger base shows a relatively balanced gender distribution with a slight majority of female travelers.
+
+#### 3. Top 5 Airports by Number of Bookings
+![Top Airports](dashboards/top_airports_bookings.png)
+
+Most popular airports by booking volume:
+1. **West Matthew International Airport** - ~50 bookings
+2. **West Melissaborough International Airport** - ~35 bookings
+3. **Teresaberg International Airport** - ~30 bookings
+4. **New Isaiah International Airport** - ~28 bookings
+5. **Gregoryland International Airport** - ~27 bookings
+
+#### 4. Total Revenue by Airline
+![Revenue by Airline](dashboards/revenue_by_airline.png)
+
+Revenue performance across airlines:
+- **Lufthansa** - Leading with ~270,000 in total revenue
+- **Qatar Airways** - ~250,000 in revenue
+- **Air Canada** - ~260,000 in revenue
+- **Delta** - ~210,000 in revenue
+- **Emirates** - ~135,000 in revenue
+
+### Business Insights
+- Lufthansa and Air Canada dominate revenue generation despite having similar booking volumes to other carriers, suggesting higher average ticket prices
+- Booking activity shows seasonal variation with summer months (June-July) experiencing a decline
+- West Matthew International Airport serves as the primary hub with significantly higher traffic
+- The customer base is well-balanced across genders, indicating broad market appeal
+
+These dashboards demonstrate the value of the Medallion Architecture approach - raw data transformed into actionable business intelligence through structured ETL processes.
+
+---
+
 ## Results & Artifacts
 - Managed Delta tables created under gold database (example: `gold.fact_bookings`, `gold.dim_passengers`).
 - ERD image in `images/erd.png`.
+- Dashboard visualizations in `images/` folder.
 - Job config: `configs/bronze_ingestion_job.json`.
 - Pipeline config: `configs/silver_dlt_pipeline.json`.
 - Notebooks for bronze/silver/gold located in `notebooks/`.
