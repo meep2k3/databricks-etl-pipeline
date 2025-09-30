@@ -3,12 +3,12 @@
 ## Introduction
 This repository contains an **end-to-end ETL pipeline** built and practiced on **Databricks** (platform) to learn Cloud Data Engineering concepts.  
 The pipeline processes airline booking data and follows the **Medallion Architecture** (kiến trúc Medallion: Bronze → Silver → Gold).  
-Key learning goals: working with incremental ingestion, data quality checks, Delta Live Tables (DLT) (Delta Live Tables — pipeline khai báo trên Databricks), and dimensional modeling.
+Key learning goals: working with incremental ingestion, data quality checks, Delta Live Tables (DLT) (Delta Live Tables), and dimensional modeling.
 
 **Highlights**
-- Ingest CSV inputs via Auto Loader (cloudFiles) (Auto Loader — công cụ ingest file của Databricks).  
+- Ingest CSV inputs via Auto Loader (cloudFiles) (Auto Loader).  
 - Bronze: raw landing (Delta tables).  
-- Silver: transformations + data quality + SCD (Slowly Changing Dimension — cách xử lý thay đổi của dimension).  
+- Silver: transformations + data quality + SCD (Slowly Changing Dimension).  
 - Gold: star schema (fact & dimensions) for analytics.
 - Orchestration via Databricks Job (Jobs) and Delta Live Tables pipeline.
 
@@ -18,7 +18,7 @@ Key learning goals: working with incremental ingestion, data quality checks, Del
 Raw CSV → Bronze (Landing) → Silver (Transform/Clean) → Gold (Analytics)
 
 ```yaml
-- Bronze: raw ingest, minimal transformation, store as Delta tables (Delta Lake — lớp lưu trữ có ACID).  
+- Bronze: raw ingest, minimal transformation, store as Delta tables (Delta Lake).  
 - Silver: cleaning, type coercion, quality rules, apply SCD where needed.
 - Gold: business-ready tables (fact & dimensions), analytical queries.
 ```
